@@ -136,7 +136,7 @@ The rules state that only the first 3 minutes are evaluated. Timing:
 - [ ] Demo video, ≤ 3 min, public on YouTube
 - [ ] Deployed URL (strongly recommended)
 - [ ] Devpost write-up: how AI Logic was used, feature summary, value proposition
-- [ ] Firebase project + `public/config.js` filled with the real config
+- [ ] Firebase project + `config.js` filled with the real config (root file, loaded by `index.html`; `firebase.json` maps it for hosting)
 
 ## What is not claimed
 

@@ -42,23 +42,6 @@ export async function createAiClient(config, opts = {}) {
 
   const app = initializeApp(config);
 
-  // App Check is mandatory for Firebase AI Logic. A debug token is accepted but
-  // must be safelisted in the console; production uses reCAPTCHA v3.
-  if (opts.debugAppCheck) {
-    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-  }
-  try {
-    initializeAppCheck(app, {
-      provider: opts.recaptchaKey
-        ? new ReCaptchaV3Provider(opts.recaptchaKey)
-        : new CustomProvider({ getToken: async () => ({ token: "debug-mode", expireTimeMillis: Date.now() + 3_600_000 }) }),
-      isTokenAutoRefreshEnabled: true,
-    });
-  } catch (err) {
-    // App Check failing is a configuration problem worth surfacing, not hiding.
-    console.warn("App Check initialization failed:", err?.message ?? err);
-  }
-
   const ai = getAI(app, { backend: new GoogleAIBackend() });
 
   const baseConfig = {
@@ -82,6 +65,8 @@ export async function createAiClient(config, opts = {}) {
     ...baseConfig,
     mode: InferenceMode.ONLY_IN_CLOUD,
   });
+
+  initAppCheck(app, opts);
 
   return {
     app,
@@ -132,6 +117,38 @@ export async function createAiClient(config, opts = {}) {
       };
     },
   };
+}
+
+/**
+ * App Check is mandatory for Firebase AI Logic. In debug mode the SDK prints a
+ * token to the console on first run; safelist it in the Firebase console.
+ * Without a reCAPTCHA key or debug mode there is no valid provider: a dummy
+ * CustomProvider token is rejected by the backend, so faking it only moves the
+ * failure to the first inference call. Skip openly instead.
+ */
+function initAppCheck(app, opts = {}) {
+  if (!opts.recaptchaKey && !opts.debugAppCheck) {
+    console.warn("App Check skipped: no reCAPTCHA key and debug App Check off.");
+    return;
+  }
+  if (opts.debugAppCheck) {
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+  try {
+    initializeAppCheck(app, {
+      provider: opts.recaptchaKey
+        ? new ReCaptchaV3Provider(opts.recaptchaKey)
+        : new CustomProvider({
+            getToken: async () => {
+              throw new Error("safelist the debug token printed in the console first");
+            },
+          }),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (err) {
+    // App Check failing is a configuration problem worth surfacing, not hiding.
+    console.warn("App Check initialization failed:", err?.message ?? err);
+  }
 }
 
 /** Translate the SDK's inference source into something the UI can branch on. */

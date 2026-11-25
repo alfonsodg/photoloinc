@@ -1,0 +1,7 @@
+{
+  "hosting": {
+    "public": "photoloinc",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "**/*.test.mjs"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+  }
+}
