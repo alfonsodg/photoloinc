@@ -263,10 +263,13 @@ export function assemblePanels(observations, meta = {}) {
  * from subject + code + second so a retry does not duplicate a reading.
  */
 export function toFhir(obs, opts = {}) {
-  const subject = opts.subject ?? "anonymous";
+  // No fabricated identity: without an explicit subject the Observation
+  // carries no subject reference at all (anonymous by omission, issue #4).
+  // The id still needs a stable segment, so it falls back to "anonymous".
+  const subject = opts.subject ?? null;
   const when = opts.at ?? new Date();
   const at = when instanceof Date ? when.toISOString() : String(when);
-  const id = [subject, obs.loinc, at.slice(0, 19)]
+  const id = [subject ?? "anonymous", obs.loinc, at.slice(0, 19)]
     .join("-")
     .replace(/[^A-Za-z0-9.-]/g, "-")
     .slice(0, 64);
@@ -292,7 +295,7 @@ export function toFhir(obs, opts = {}) {
       coding: [{ system: "http://loinc.org", code: obs.loinc, display: obs.display }],
       text: obs.display,
     },
-    subject: { reference: `Patient/${subject}` },
+    ...(subject ? { subject: { reference: `Patient/${subject}` } } : {}),
     effectiveDateTime: at,
     // A panel carries its values in components, never in a top-level quantity.
     ...(obs.components

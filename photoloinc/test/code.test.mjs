@@ -167,6 +167,20 @@ test("FHIR output is a valid Observation with an id inside the allowed charset",
   assert.equal(fhir.valueQuantity.system, "http://unitsofmeasure.org");
 });
 
+test("FHIR omits the subject reference when no subject is given", () => {
+  // The app has no identity concept; emitting Patient/anonymous would
+  // fabricate one (issue #4). An explicit subject is still honored.
+  const { observations } = codeReport([{ name: "Glucosa", value: "92", unit: "mg/dL" }]);
+  const anon = toFhir(observations[0], { at: new Date("2026-11-24T10:00:00Z") });
+  assert.equal(anon.subject, undefined);
+  assert.match(anon.id, /anonymous/);
+  const named = toFhir(observations[0], {
+    subject: "patient-1",
+    at: new Date("2026-11-24T10:00:00Z"),
+  });
+  assert.equal(named.subject.reference, "Patient/patient-1");
+});
+
 test("catalog never emits a code it cannot back with a value", () => {
   // Non-numeric values must be rejected rather than coerced to 0 or NaN.
   for (const value of ["", "n/a", "---", "negativo"]) {

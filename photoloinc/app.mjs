@@ -146,11 +146,12 @@ async function runPipeline() {
     }
 
     state.lastRaw = text;
+    // No subject is passed: the app has no identity concept, and the FHIR
+    // output must not fabricate a Patient reference (issue #4).
     const report = buildReport(parsed.rows, {
       inferenceSource: source,
       model,
       latencyMs,
-      subject: "photo",
     });
 
     state.lastReport = report;
