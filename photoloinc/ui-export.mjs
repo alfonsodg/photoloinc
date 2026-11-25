@@ -26,7 +26,7 @@ export function buildFhirBundle(report) {
 }
 
 export function buildCsv(report) {
-  const header = ["loinc", "display", "value", "unit", "source_name", "source_value", "source_unit"];
+  const header = ["loinc", "display", "value", "unit", "source_name", "source_value", "source_unit", "inference_source"];
   const rows = report.observations.map((o) => [
     o.loinc,
     o.display,
@@ -35,6 +35,7 @@ export function buildCsv(report) {
     o.source.name,
     o.source.value,
     o.source.unit ?? "",
+    report.inference?.source ?? "unknown",
   ]);
   return [header, ...rows]
     .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
