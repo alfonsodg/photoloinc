@@ -196,6 +196,7 @@ async function extract() {
   // Downloading the local model and then ignoring it would be the worst of both
   // worlds: hundreds of megabytes spent to prove a point.
   if (forceCloud) {
+    confirmCloudUpload("forced cloud fallback");
     showProgress(0.15, "Cloud fallback forced — the on-device model is bypassed");
   } else {
     showProgress(null, "Preparing the on-device model…");
@@ -204,6 +205,9 @@ async function extract() {
       showProgress(pct / 100, `Downloading the local model… ${Math.round(pct)}%`);
     });
     if (!prepared.available) {
+      // Preparing/downloading the model is local-only, so the confirm comes
+      // after it: only the image leaving the device needs consent.
+      confirmCloudUpload("no local model on this device");
       showProgress(0.15, "No local model on this device — the cloud will do the work");
     }
   }
@@ -233,6 +237,19 @@ function showProgress(fraction, label) {
 /* ------------------------------------------------------------------ */
 /* misc                                                                 */
 /* ------------------------------------------------------------------ */
+
+/**
+ * The header the model ignores (name, document, physician) still travels
+ * inside the photo when the cloud does the work. Consent is asked before the
+ * image leaves, never after; declining aborts the run (issue #5).
+ */
+function confirmCloudUpload(reason) {
+  const ok = window.confirm(
+    `This run will send the FULL photo to the cloud (${reason}) — including ` +
+      `patient name, ID and physician if visible in the frame. Continue?`,
+  );
+  if (!ok) throw new Error("Cloud upload declined: the photo never left this device.");
+}
 
 function showError(message) {
   el.error.textContent = message;
