@@ -110,6 +110,49 @@ test("renderText shows what could not be coded", () => {
   assert.match(text, /Hierro serico/);
 });
 
+test("systolic and diastolic merge into one BP panel observation", () => {
+  const report = buildReport(
+    [
+      { name: "Presion sistolica", value: "120", unit: "mmHg" },
+      { name: "Presion diastolica", value: "80", unit: "mmHg" },
+      { name: "Glucosa", value: "92", unit: "mg/dL" },
+    ],
+    { inferenceSource: "on-device" },
+  );
+  assert.equal(report.observations.length, 2);
+  const panel = report.observations.find((o) => o.loinc === "85354-9");
+  assert.ok(panel, "expected a panel observation");
+  assert.equal(panel.value, "120/80");
+  assert.equal(panel.category, "vital-signs");
+  assert.equal(panel.components.length, 2);
+  const fhir = panel.fhir;
+  assert.equal(fhir.code.coding[0].code, "85354-9");
+  assert.equal(fhir.category[0].coding[0].code, "vital-signs");
+  assert.equal(fhir.valueQuantity, undefined);
+  assert.deepEqual(
+    fhir.component.map((c) => c.code.coding[0].code),
+    ["8480-6", "8462-4"],
+  );
+});
+
+test("a lone systolic row still codes on its own as a vital sign", () => {
+  const report = buildReport([{ name: "PAS", value: "120", unit: "mmHg" }], {
+    inferenceSource: "on-device",
+  });
+  assert.equal(report.observations.length, 1);
+  assert.equal(report.observations[0].loinc, "8480-6");
+  assert.equal(report.observations[0].category, "vital-signs");
+  assert.equal(report.observations[0].fhir.category[0].coding[0].code, "vital-signs");
+});
+
+test("chemistry rows keep the laboratory category", () => {
+  const report = buildReport([{ name: "Glucosa", value: "92", unit: "mg/dL" }], {
+    inferenceSource: "on-device",
+  });
+  assert.equal(report.observations[0].category, "laboratory");
+  assert.equal(report.observations[0].fhir.category[0].coding[0].code, "laboratory");
+});
+
 test("an empty extraction report is well formed, not a crash", () => {
   const report = buildReport([], { inferenceSource: "on-device" });
   assert.equal(report.summary.extracted, 0);

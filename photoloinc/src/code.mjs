@@ -199,6 +199,7 @@ export function codeOne(raw, meta = {}) {
       analyte: entry.key,
       loinc: entry.code,
       display: entry.display,
+      category: entry.category ?? "laboratory",
       value: round(converted.value),
       unit: converted.unit,
       source: {
@@ -221,7 +222,37 @@ export function codeReport(rows, meta = {}) {
     if (r.ok) observations.push(r.observation);
     else rejected.push(r.rejected);
   }
-  return { observations, rejected };
+  return { observations: assemblePanels(observations, meta), rejected };
+}
+
+/**
+ * Blood pressure is one panel Observation with two components, not two
+ * separate Observations (LOINC 85354-9). A lone systolic or diastolic row
+ * still codes on its own; only the pair merges.
+ */
+export function assemblePanels(observations, meta = {}) {
+  const sys = observations.find((o) => o.analyte === "systolic_bp");
+  const dia = observations.find((o) => o.analyte === "diastolic_bp");
+  if (!sys || !dia) return observations;
+  const rest = observations.filter((o) => o !== sys && o !== dia);
+  const panel = {
+    analyte: "blood_pressure",
+    loinc: "85354-9",
+    display: "Blood pressure panel with all children optional",
+    category: "vital-signs",
+    value: `${sys.value}/${dia.value}`,
+    unit: "mm[Hg]",
+    source: {
+      name: "Blood pressure",
+      value: `${sys.source.value}/${dia.source.value}`,
+      unit: "mm[Hg]",
+      converted: Boolean(sys.source.converted || dia.source.converted),
+    },
+    components: [sys, dia],
+    ...meta,
+  };
+  rest.splice(Math.min(observations.indexOf(sys), observations.indexOf(dia)), 0, panel);
+  return rest;
 }
 
 /**
@@ -240,6 +271,8 @@ export function toFhir(obs, opts = {}) {
     .replace(/[^A-Za-z0-9.-]/g, "-")
     .slice(0, 64);
 
+  const vital = obs.category === "vital-signs";
+
   return {
     resourceType: "Observation",
     id,
@@ -249,8 +282,8 @@ export function toFhir(obs, opts = {}) {
         coding: [
           {
             system: "http://terminology.hl7.org/CodeSystem/observation-category",
-            code: "laboratory",
-            display: "Laboratory",
+            code: vital ? "vital-signs" : "laboratory",
+            display: vital ? "Vital Signs" : "Laboratory",
           },
         ],
       },
@@ -261,12 +294,30 @@ export function toFhir(obs, opts = {}) {
     },
     subject: { reference: `Patient/${subject}` },
     effectiveDateTime: at,
-    valueQuantity: {
-      value: obs.value,
-      unit: obs.unit,
-      system: "http://unitsofmeasure.org",
-      code: obs.unit,
-    },
+    // A panel carries its values in components, never in a top-level quantity.
+    ...(obs.components
+      ? {
+          component: obs.components.map((c) => ({
+            code: {
+              coding: [{ system: "http://loinc.org", code: c.loinc, display: c.display }],
+              text: c.display,
+            },
+            valueQuantity: {
+              value: c.value,
+              unit: c.unit,
+              system: "http://unitsofmeasure.org",
+              code: c.unit,
+            },
+          })),
+        }
+      : {
+          valueQuantity: {
+            value: obs.value,
+            unit: obs.unit,
+            system: "http://unitsofmeasure.org",
+            code: obs.unit,
+          },
+        }),
     device: { display: opts.device ?? "on-device model" },
   };
 }
