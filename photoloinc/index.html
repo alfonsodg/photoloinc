@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PhotoLoinc — lab report to LOINC, on your device</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <!--
+      Firebase is loaded as ES modules from the official CDN, so the app runs with
+      no build step: open it, or serve the folder, and the same code path used in
+      production executes. The import map is what lets `src/ai.mjs` import
+      "firebase/app" the way the documentation shows.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js",
+          "firebase/ai": "https://www.gstatic.com/firebasejs/13.4.0/firebase-ai.js",
+          "firebase/app-check": "https://www.gstatic.com/firebasejs/13.4.0/firebase-app-check.js"
+        }
+      }
+    </script>
+    <script src="./config.js"></script>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d9488'/%3E%3Cpath d='M9 21l4-8 3 5 3-4 4 7' stroke='%23fff' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" aria-hidden="true" class="brand-mark">
+          <rect width="32" height="32" rx="7" fill="currentColor" />
+          <path d="M9 21l4-8 3 5 3-4 4 7" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <div>
+          <h1>PhotoLoinc</h1>
+          <p>Lab report photo → LOINC-coded FHIR, on your device</p>
+        </div>
+      </div>
+      <div class="status" id="device-status" aria-live="polite">
+        <span class="dot" data-state="probing"></span>
+        <span class="status-text">Checking this browser…</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel" id="intake-panel">
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose a lab report photo">
+          <input type="file" id="file" accept="image/jpeg,image/png" hidden />
+          <div class="drop-inner">
+            <svg viewBox="0 0 24 24" class="drop-icon" aria-hidden="true">
+              <path
+                d="M4 16.5V19a2 2 0 002 2h12a2 2 0 002-2v-2.5M12 3v13m0-13L7.5 7.5M12 3l4.5 4.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <p class="drop-title">Drop a photo of a lab report</p>
+            <p class="drop-hint">JPEG or PNG · the image is never sent anywhere while the local model is available</p>
+            <button class="btn primary" id="pick" type="button">Choose a photo</button>
+            <button class="btn ghost" id="sample" type="button">Use a sample report</button>
+          </div>
+        </div>
+
+        <figure class="preview" id="preview" hidden>
+          <img id="preview-img" alt="The lab report you selected" />
+          <figcaption>
+            <span id="preview-name"></span>
+            <button class="btn small ghost" id="reset" type="button">Change photo</button>
+          </figcaption>
+        </figure>
+
+        <div class="run-row">
+          <button class="btn primary" id="run" type="button" disabled>Extract and code</button>
+          <label class="toggle">
+            <input type="checkbox" id="force-cloud" />
+            <span>Force cloud fallback (to show the difference)</span>
+          </label>
+        </div>
+
+        <div class="progress" id="progress" hidden>
+          <div class="progress-bar"><span id="progress-fill"></span></div>
+          <p id="progress-label">Preparing the on-device model…</p>
+        </div>
+
+        <p class="error" id="error" role="alert" hidden></p>
+      </section>
+
+      <section class="panel result" id="result" hidden>
+        <div class="result-head">
+          <div>
+            <h2 id="result-title">Coded report</h2>
+            <p class="result-meta" id="result-meta"></p>
+          </div>
+          <div class="badge" id="source-badge" data-source="unknown">
+            <span class="badge-dot"></span>
+            <span class="badge-text">unknown</span>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="stat">
+            <span class="stat-value" id="stat-coded">0</span>
+            <span class="stat-label">coded</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="stat-rate">0%</span>
+            <span class="stat-label">coverage</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="stat-latency">—</span>
+            <span class="stat-label">model latency</span>
+          </div>
+        </div>
+
+        <table class="codes">
+          <thead>
+            <tr>
+              <th>LOINC</th>
+              <th class="num">Value</th>
+              <th>Unit</th>
+              <th>Analyte</th>
+              <th>Source text</th>
+            </tr>
+          </thead>
+          <tbody id="codes-body"></tbody>
+        </table>
+
+        <div class="rejected" id="rejected" hidden>
+          <h3>Not coded</h3>
+          <p class="rejected-hint">Shown so nothing disappears silently. Each row names why it was skipped.</p>
+          <ul id="rejected-list"></ul>
+        </div>
+
+        <div class="actions">
+          <button class="btn small" id="export-json" type="button">Download JSON</button>
+          <button class="btn small" id="export-fhir" type="button">Download FHIR bundle</button>
+          <button class="btn small" id="export-csv" type="button">Download CSV</button>
+          <button class="btn small ghost" id="copy-text" type="button">Copy as text</button>
+        </div>
+
+        <details class="raw">
+          <summary>Raw model response</summary>
+          <pre id="raw-response"></pre>
+        </details>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        PhotoLoinc codes deterministically from a verified LOINC catalog. The model transcribes; it never assigns a code.
+        <span id="footer-note"></span>
+      </p>
+    </footer>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>
