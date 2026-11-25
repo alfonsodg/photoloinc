@@ -103,7 +103,19 @@ export const CATALOG = [
     canonical: "mg/dL",
     family: MASS_CONC,
     range: [1, 200],
-    aliases: ["bun", "urea nitrogen", "blood urea nitrogen", "nitrogeno ureico", "urea"],
+    aliases: ["bun", "urea nitrogen", "blood urea nitrogen", "nitrogeno ureico", "nitrogeno ureico en sangre"],
+  },
+  {
+    // Urea mass is NOT urea nitrogen: urea mg/dL = BUN mg/dL x 2.14.
+    // Mapping one to the other 1:1 mislabels the result, so urea gets its
+    // own entry (3094-0 stays strictly for urea nitrogen).
+    key: "urea",
+    code: "3091-6",
+    display: "Urea [Mass/volume] in Serum or Plasma",
+    canonical: "mg/dL",
+    family: MASS_CONC,
+    range: [2, 430],
+    aliases: ["urea", "urea serica", "urea en sangre", "urea en suero", "serum urea"],
   },
   {
     key: "creatinine",

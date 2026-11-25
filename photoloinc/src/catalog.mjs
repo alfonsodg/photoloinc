@@ -48,6 +48,8 @@ export const MOLAR_CONVERSIONS = {
   triglycerides: { mass: "mg/dL", substance: "mmol/L", massPerSubstance: 88.57 },
   bilirubin_total: { mass: "mg/dL", substance: "µmol/L", massPerSubstance: 0.05847 },
   bun: { mass: "mg/dL", substance: "mmol/L", massPerSubstance: 2.801 },
+  // 1 mmol/L urea = 60.056 mg/L = 6.006 mg/dL (molar mass of urea, not of its nitrogen).
+  urea: { mass: "mg/dL", substance: "mmol/L", massPerSubstance: 6.006 },
 };
 
 /** Lookup index: LOINC code -> entry. */

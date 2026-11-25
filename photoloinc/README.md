@@ -21,7 +21,7 @@ confident wrong answer, so:
 | layer | responsibility |
 |---|---|
 | Gemini Nano 4 | read the image, transcribe name / value / unit |
-| `src/catalog.mjs` | 41 LOINC-verified analytes, alias index, unit families |
+| `src/catalog.mjs` | 42 LOINC-verified analytes, alias index, unit families |
 | `src/code.mjs` | resolve → convert → plausibility gate → FHIR |
 
 Every code was verified against the NLM Clinical Tables LOINC service before being
@@ -76,7 +76,7 @@ public/
 src/
   ai.mjs          Firebase AI Logic client, InferenceMode, inferenceSource mapping
   prompt.mjs      system instruction, response schema, tolerant JSON parsing
-  loinc-data.mjs  the 41 verified analytes
+  loinc-data.mjs  the 42 verified analytes
   units.mjs       unit families and SI conversion factors
   catalog.mjs     indexes, alias resolution, molar conversions
   code.mjs        resolve / convert / plausibility / FHIR
@@ -99,7 +99,7 @@ is claiming privacy it may not have. The badge is the product's honesty.
 
 Not a medical device. No diagnosis, no abnormality flagging. The reference ranges on
 the sample are printed text the app deliberately ignores; the plausibility gates are
-typo guards, not clinical intervals. Rows outside the 41-analyte catalog are listed as
+typo guards, not clinical intervals. Rows outside the 42-analyte catalog are listed as
 not coded, with the reason, rather than approximated.
 
 ## License

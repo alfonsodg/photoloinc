@@ -56,7 +56,7 @@ clinical context is worse than failing visibly. So the responsibilities split:
 | layer | does | never does |
 |---|---|---|
 | Gemini Nano 4 | read the image, transcribe name/value/unit | emit a LOINC code, convert a unit, judge normality |
-| `catalog.mjs` | 41 verified analytes, alias index, unit families | touch the image |
+| `catalog.mjs` | 42 verified analytes, alias index, unit families | touch the image |
 | `code.mjs` | resolve → convert → plausibility gate → FHIR | guess a conversion it has no factor for |
 
 Every LOINC code in the catalog was verified against the NLM Clinical Tables LOINC
@@ -143,7 +143,7 @@ The rules state that only the first 3 minutes are evaluated. Timing:
 - Not a medical device, not a diagnosis tool, and the UI says so.
 - Reference ranges printed on the report are shown as source text; the app does not
   compare against them or flag anything as abnormal.
-- 41 analytes is a deliberate scope, not a limitation being hidden: the rejection
+- 42 analytes is a deliberate scope, not a limitation being hidden: the rejection
   list makes every gap visible.
 - The plausibility ranges are typo guards, not clinical reference intervals.
 

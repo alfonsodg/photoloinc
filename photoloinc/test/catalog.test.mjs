@@ -56,6 +56,8 @@ test("known codes resolve to the expected analyte", () => {
     "8462-4": "diastolic_bp",
     "8867-4": "heart_rate",
     "2345-7": "glucose",
+    "3094-0": "bun",
+    "3091-6": "urea",
     "2160-0": "creatinine",
     "718-7": "hemoglobin",
     "4548-4": "hba1c",

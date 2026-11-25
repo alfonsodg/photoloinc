@@ -23,6 +23,32 @@ test("resolves Spanish and English analyte names", () => {
   assert.equal(resolveAnalyte("creatinine")?.key, "creatinine");
 });
 
+test("urea and urea nitrogen resolve to different entries", () => {
+  // Urea mass is 2.14x urea nitrogen mass: mapping one to the other 1:1
+  // silently mislabels the result (issue #1).
+  assert.equal(resolveAnalyte("Urea")?.key, "urea");
+  assert.equal(resolveAnalyte("Urea")?.code, "3091-6");
+  assert.equal(resolveAnalyte("Urea serica")?.code, "3091-6");
+  assert.equal(resolveAnalyte("Nitrogeno ureico")?.key, "bun");
+  assert.equal(resolveAnalyte("Nitrogeno ureico")?.code, "3094-0");
+  assert.equal(resolveAnalyte("BUN")?.code, "3094-0");
+
+  const urea = codeOne({ name: "Urea", value: "28", unit: "mg/dL" });
+  assert.equal(urea.ok, true);
+  assert.equal(urea.observation.loinc, "3091-6");
+  assert.equal(urea.observation.value, 28);
+
+  const bun = codeOne({ name: "Nitrogeno ureico", value: "13", unit: "mg/dL" });
+  assert.equal(bun.ok, true);
+  assert.equal(bun.observation.loinc, "3094-0");
+});
+
+test("urea converts by molar mass 60.06, not by the BUN factor", () => {
+  const urea = resolveAnalyte("Urea");
+  // 1 mmol/L urea = 6.006 mg/dL; the BUN factor (2.801) must not apply.
+  assert.ok(Math.abs(convert(5, "mmol/L", urea).value - 30.03) < 0.05);
+});
+
 test("unknown analytes resolve to null instead of a guess", () => {
   assert.equal(resolveAnalyte("Hierro serico"), null);
   assert.equal(resolveAnalyte(""), null);
