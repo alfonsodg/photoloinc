@@ -30,7 +30,7 @@ committed. Nothing is written from memory.
 ## Run
 
 ```bash
-node --test                    # 33 tests, zero dependencies
+node --test                    # 45 tests, zero dependencies
 python3 -m http.server 8080
 # open http://localhost:8080/index.html
 # or http://localhost:8080/index.html?demo=1 for the bundled sample
@@ -81,7 +81,7 @@ src/
   catalog.mjs     indexes, alias resolution, molar conversions
   code.mjs        resolve / convert / plausibility / FHIR
   pipeline.mjs    rows in, report out
-test/             node:test suites
+test/             node:test suites (catalog, code, pipeline, export)
 scripts/
   make-sample.py  renders the sample lab report
 ```

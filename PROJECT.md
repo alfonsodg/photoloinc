@@ -105,7 +105,7 @@ adding them to look thorough is the kind of thing a judge notices.
 
 | criterion | where it shows |
 |---|---|
-| **Technological Implementation** | hybrid inference is load-bearing; `inferenceSource` drives the UI; deterministic coding layer with 33 tests |
+| **Technological Implementation** | hybrid inference is load-bearing; `inferenceSource` drives the UI; deterministic coding layer with 45 tests |
 | **Design** | a real product surface: intake, capability badge, coded table with provenance, explicit non-coded list, four export paths, mobile breakpoint |
 | **Potential Impact** | health data that stays on the patient's machine; a measured 96% coding rate on a realistic Latin American report; unit conversion and plausibility checks that catch OCR errors |
 | **Quality of the Idea** | the split between "the model reads" and "the code codes" is a genuine insight, not a wrapper |
@@ -122,12 +122,12 @@ The rules state that only the first 3 minutes are evaluated. Timing:
 | 1:05–1:45 | The coded table. Point at `2345-7 · 92 · mg/dL · Glucose` and the source column showing `Glucosa en ayunas 92 mg/dL`. Explain the split: the model transcribed, the catalog coded. |
 | 1:45–2:10 | `Creatinina 1,1` — decimal comma, converted correctly. Then the rejection list: `Hierro serico — analyte not in catalog`. Say why: a wrong code is worse than an honest gap. |
 | 2:10–2:35 | Download the FHIR bundle, show the `Observation` resource. One click and it is interoperable. |
-| 2:35–2:55 | Open Chrome with the model component removed: badge flips to **cloud fallback · image left the device**. "Same code, one flag, and it tells you the truth." |
+| 2:35–2:55 | Open Chrome with the model component removed: a dialog names the name/ID leaving the device — accept, and the badge flips to **cloud fallback · image left the device**. "Same code, one flag, and it tells you the truth." |
 | 2:55–3:00 | Close on the split: privacy where it is possible, capability where it is not — and never a lie about which. |
 
 ## Submission checklist
 
-- [x] Public repo with license visible in the About section — Apache-2.0
+- [x] Public repo with license visible in the About section — Apache-2.0 ([alfonsodg/photoloinc](https://github.com/alfonsodg/photoloinc))
 - [x] Firebase AI Logic imported **and called at runtime** (`src/ai.mjs` → `getGenerativeModel` → `generateContent`)
 - [x] Works with a debug App Check token (allowed by the rules)
 - [x] Text runs in English
@@ -158,7 +158,7 @@ where a well-executed submission in the remaining days is genuinely competitive.
 
 ```bash
 cd photoloinc
-node --test                    # 33 tests, no dependencies
+node --test                    # 45 tests, no dependencies
 python3 -m http.server 8080    # then open http://localhost:8080/index.html
 ```
 
